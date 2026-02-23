@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SOLELY.</title>
+        <link rel="icon" type="image/x-icon" href="https://freepngimg.com/download/icon/school/8203-s-alphabet-round-circle.png">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+        <style>
+            html { scroll-behavior: smooth; }
+            .hero-bg { position: relative; overflow: hidden; background-color: #1c1917; }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .color-option {
+                width: 32px; height: 32px; border-radius: 99px;
+                cursor: pointer; border: 2px solid transparent; transition: all 0.3s ease;
+            }
+            .color-option.active {
+                border-color: black; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            }
+            .size-option {
+                width: 100%; height: 44px; border: 1px solid #e5e7eb;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer; border-radius: 12px; font-weight: 700; font-size: 12px; transition: all 0.2s ease;
+            }
+            .size-option.active { background: black; color: white; border-color: black; }
+            .size-option:hover:not(.active) { border-color: black; }
+            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            @keyframes checkmark { 0% { stroke-dashoffset: 100; } 100% { stroke-dashoffset: 0; } }
+            @keyframes bounceSubtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+            @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+            
+            .animate-pop-in { animation: popIn 0.3s ease-out forwards; }
+            .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+            .animate-toast { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+            .loader-spin { animation: spin 1s linear infinite; }
+            .animate-checkmark { stroke-dasharray: 100; stroke-dashoffset: 100; animation: checkmark 0.8s ease-in-out forwards 0.2s; }
+            .animate-bounce-subtle { animation: bounceSubtle 2s infinite ease-in-out; }
+            .animate-hero-float { animation: heroFloat 6s infinite ease-in-out; }
+            
+            .payment-option, .shipping-option {
+                border: 2px solid #f5f5f4;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            .payment-option.active, .shipping-option.active {
+                border-color: black;
+                background-color: #fafaf9;
+            }
+            .payment-option.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                filter: grayscale(1);
+            }
+        </style>
+        <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    </head>
+    <body>
+        <div id="root"></div>
+
+        <script type="text/babel">
+            const { useState, useEffect, useMemo } = React;
+
+            const Category = { ALL: "All", SHOES: "Shoes", SOCKS: "Socks", CLOGS: "Clogs", SANDALS: "Sandals" };
+            const SUB_CATEGORIES = {
+                [Category.SHOES]: ["Running", "Basketball", "Casual"],
+                [Category.SOCKS]: ["Crew", "Ankle", "No-Show"],
+                [Category.CLOGS]: [],
+                [Category.SANDALS]: ["Slides", "Flip-Flops"]
+            };
+            const SIZES = [38, 39, 40, 41, 42, 43, 44];
+            
+            const SHIPPING_METHODS = [
+                { id: "std", name: "Standard Delivery", price: 100, desc: "3-5 Business Days" },
+                { id: "exp", name: "Express Shipping", price: 250, desc: "Next Day Delivery" }
+            ];
+
+            const PRODUCTS = [
+                { id: "s1", name: "Adidas Adizero EVO", price: 10299, category: Category.SHOES, sub: "Running", featured: true, variants: [{ color: "#FFFFFF", colorName: "White", img: "https://i.pinimg.com/1200x/1e/32/77/1e327728743e0029c5de111702e9c9f2.jpg" }, { color: "#000000", colorName: "Black", img: "https://i.pinimg.com/1200x/1b/3b/ec/1b3bec908ed8eb755aadaf469621306b.jpg" }] },
+                { id: "s2", name: "HOKA Clifton 10", price: 6649, category: Category.SHOES, sub: "Running", featured: false, variants: [{ color: "#000000", colorName: "Black", img: "https://i.pinimg.com/1200x/83/9b/92/839b920b1d514c66025eb2b97b44ad61.jpg" }, { color: "#FFFFFF", colorName: "White", img: "https://i.pinimg.com/1200x/b6/8d/0a/b68d0afddabe918cab200faf40beeeb2.jpg" }] },
+                { id: "s3", name: "On Cloudsurfer", price: 9299, category: Category.SHOES, sub: "Running", featured: false, variants: [{ color: "#B6FFBB", colorName: "Mint", img: "https://www.mytheresa.com/media/1094/1238/100/0a/P01075860.jpg" }] },
+                { id: "s4", name: "All‑Pro NITRO", price: 3169, category: Category.SHOES, sub: "Basketball", featured: false, variants: [{ color: "#FFFFFF", colorName: " Camo White", img: "https://i.pinimg.com/1200x/39/39/45/39394502206676ab4f9acf9c80572712.jpg" }, { color: "#9000cd", colorName: "Purple Mint", img: "https://i.pinimg.com/1200x/f8/97/7f/f8977f9b19f5a3554f4c9f18098a48df.jpg" }] },
+                { id: "s5", name: "Nike G.T. Cut Academy", price: 4999, category: Category.SHOES, sub: "Basketball", featured: false, variants: [{ color: "#acacac", colorName: "Grey", img: "https://i.pinimg.com/1200x/c0/d9/13/c0d913eb0ab8f71ec89937d0db496f38.jpg" }] },
+                { id: "s6", name: "Adidas D.O.N Issue 7", price: 6750, category: Category.SHOES, sub: "Basketball", featured: true, variants: [{ color: "#7ec4fd", colorName: "Blue", img: "https://i.pinimg.com/1200x/b4/7f/c4/b47fc406e2910ff68de4dc84af221fb2.jpg" }] },
+                { id: "s7", name: "Vans Unisex Classic Slip-On", price: 2799, category: Category.SHOES, sub: "Casual", featured: false, variants: [{ color: "#000000", colorName: "Black", img: "https://i.pinimg.com/1200x/a9/cf/91/a9cf9194b671f3fcba673d900142b3a5.jpg" }, { color: "#FFFFFF", colorName: "White", img: "https://assets.vans.com/images/t_img/c_fill,g_center,f_auto,h_573,e_unsharp_mask:100,w_458/dpr_2.0/v1740714499/VN000EYEW00-ALT3/Classic-SlipOn-Shoe-VANS-True-White-ALT3.png" }, { color: "#bababa", colorName: "Grey", img: "https://assets.vans.com/images/t_img/c_fill,g_center,f_auto,h_573,e_unsharp_mask:100,w_458/dpr_2.0/v1753917549/VN0A4U38IYP-ALT2/Classic-SlipOn-Shoe-VANS-Drizzle-Grey-True-White-ALT2.png" }, { color: "#FFFDD0", colorName: "Cream Rose", img: "https://assets.vans.com/images/t_img/c_fill,g_center,f_auto,h_573,e_unsharp_mask:100,w_458/dpr_2.0/v1767048725/VN000EAC2VZ-ALT2/Classic-SlipOn-Shoe-VANS-ALT2.png" }] },
+                { id: "s8", name: "Nike Dunk", price: 2100, category: Category.SHOES, sub: "Casual", featured: true, variants: [{ color: "#000000", colorName: "Panda", img: "https://i.pinimg.com/1200x/0f/55/b9/0f55b9c738fc61cb2a8a1573c6dfe1c3.jpg" }] },
+                { id: "s9", name: "New Balance 9060", price: 10899, category: Category.SHOES, sub: "Casual", featured: false, variants: [{ color: "#d0b6cc", colorName: "Truffle Salt", img: "https://images.urbndata.com/is/image/Anthropologie/82131715_006_b?$a15-pdp-detail-shot$&fit=constrain&fmt=webp&qlt=80&wid=960" }, { color: "#aa4717", colorName: "Rich Oak", img: "https://images.urbndata.com/is/image/Anthropologie/82131715_021_b?$a15-pdp-detail-shot$&fit=constrain&fmt=webp&qlt=80&wid=960" }, { color: "#E2DFD2", colorName: "Garter Snakepearl", img: "https://images.urbndata.com/is/image/Anthropologie/82131715_036_b?$a15-pdp-detail-shot$&fit=constrain&fmt=webp&qlt=80&wid=960" }] },
+                { id: "sk1", name: "New York Athletic", price: 120, category: Category.SOCKS, sub: "Crew", variants: [{ color: "#FFFFFF", colorName: "White", img: "https://i.pinimg.com/1200x/98/b2/d3/98b2d385538289e1ca8ee1098ff861c9.jpg" }] },
+                { id: "sk2", name: "Graphic Crew", price: 100, category: Category.SOCKS, sub: "Crew", variants: [{ color: "#ffffff", colorName: "Random", img: "https://i.pinimg.com/1200x/e7/cd/2c/e7cd2c1eafaaf29d2d4cc53c75c2d035.jpg" }] },
+                { id: "sk4", name: "Nike Natural Everyday Essential 3 Pack", price: 200, category: Category.SOCKS, sub: "Ankle", variants: [{ color: "#a87b55", colorName: "Brown", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/F33743s2.jpg?im=Resize,width=750" }] },
+                { id: "sk5", name: "Adidas Trefoil", price: 180, category: Category.SOCKS, sub: "Ankle", variants: [{ color: "#FFFFFF", colorName: "White", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/H73521s.jpg?im=Resize,width=750" }, { color: "#000000", colorName: "Black", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/W80317s.jpg?im=Resize,width=750" }, { color: "#0011ff", colorName: "Blue Assorted", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/W80306s.jpg?im=Resize,width=750" }] },
+                { id: "sk6", name: "Plain Ankle 6 Pack", price: 150, category: Category.SOCKS, sub: "Ankle", variants: [{ color: "#FFFFFF", colorName: "White", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/748160s.jpg?im=Resize,width=750" }, { color: "#000000", colorName: "Black", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/950035s.jpg?im=Resize,width=750" }] },
+                { id: "sk7", name: "Ghost No-Show 3 Pack", price: 120, category: Category.SOCKS, sub: "No-Show", variants: [{ color: "Grey", colorName: "Assorted", img: "https://i.pinimg.com/1200x/fd/3e/5b/fd3e5b1c51330d0421571921d3de8976.jpg" }] },
+                { id: "c1", name: "Crocs Original Clog", price: 3499, category: Category.CLOGS, sub: "Classic", featured: false, variants: [{ color: "#e6decc", colorName: "Bone", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/Y08901s4.jpg?im=Resize,width=750" }, { color: "#c3d5ef", colorName: "Sky", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/V01881s3.jpg?im=Resize,width=750" }, { color: "#5c4b8e", colorName: "Teal", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/353388s4.jpg?im=Resize,width=750" }, { color: "#ffa2c6", colorName: "Rose", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/V00695s4.jpg?im=Resize,width=750" }, { color: "#000000", colorName: "Black", img: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/400064s5.jpg?im=Resize,width=750" }] },
+                { id: "c2", name: "Birkenstock Boston", price: 7549, category: Category.CLOGS, sub: "Classic", variants: [{ color: "#FFFFFF", colorName: "White", img: "https://www.birkenstock.com/dw/image/v2/BLZD_PRD/on/demandware.static/-/Sites-master-catalog-amer/default/dwe2f3c9c3/60136/60136_pair.jpg?sw=1310&sh=1310&sm=fit&q=65" }, { color: "#000000", colorName: "Black", img: "https://www.birkenstock.com/dw/image/v2/BLZD_PRD/on/demandware.static/-/Sites-master-catalog-amer/default/dw8aa60fa6/60196/60196_pair.jpg?sw=1310&sh=1310&sm=fit&q=65" }] },
+                { id: "sa1", name: "PUMA Leadcat 2.0 V", price: 2800, category: Category.SANDALS, sub: "Slides", variants: [{ color: "#FFFFFF", colorName: "White", img: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_750,h_750/global/387515/02/sv01/fnd/PNA/fmt/png/Leadcat-2.0-V-Slides" }, { color: "#000000", colorName: "Black", img: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_750,h_750/global/387515/01/sv01/fnd/PNA/fmt/png/Leadcat-2.0-V-Slides" }] },
+                { id: "sa2", name: "Birkenstock Barbados EVA", price: 3500, category: Category.SANDALS, sub: "Slides", variants: [{ color: "#000000", colorName: "Black", img: "https://www.bstore.com.au/cdn/shop/files/Birkenstock_Barbados_Black_Sole_1_1ceb7a3d-2d4e-4372-97d3-78fd40bdebb8.jpg?v=1764300405&width=640" }, { color: "#b963e9", colorName: "Purple Fog", img: "https://www.bstore.com.au/cdn/shop/files/Birkenstock_BarbadosEVA_PurpleFog_Double_e21f8964-4671-4d09-924e-88423453dfc6.jpg?v=1764312990&width=640" }, { color: "#FFFFFF", colorName: "White", img: "https://www.bstore.com.au/cdn/shop/files/Birkenstock_Barbados_White_Style_1_72574edb-8db6-4f83-ab4d-a95cffbb615d.jpg?v=1769666357&width=640" }] },
+                { id: "sa4", name: "Havaianas Top", price: 999, category: Category.SANDALS, sub: "Flip-Flops", variants: [{ color: "#000000", colorName: "Black", img: "https://cdn.sportofino.com/media/catalog/product/2/4/246_4000029-90_01_2.jpg?" }, { color: "#2e2e76", colorName: "Navy Blue", img: "https://cdn.sportofino.com/media/catalog/product/2/4/246_4000029-555_01_2.jpg?" }, { color: "#d700c9", colorName: "Pink", img: "https://cdn.sportofino.com/media/catalog/product/2/4/248_4000029-8910_01.jpg?" }, { color: "#21ff3c", colorName: "Neon", img: "https://cdn.sportofino.com/media/catalog/product/2/4/246_4000029-1411_01.jpg?" }] }
+            ];
+
+            const App = () => {
+                const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem("solely-cart") || "[]"));
+                const [isHome, setIsHome] = useState(true);
+                const [category, setCategory] = useState(Category.ALL);
+                const [activeSub, setActiveSub] = useState("");
+                const [search, setSearch] = useState("");
+                const [isCartOpen, setIsCartOpen] = useState(false);
+                const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+                const [checkoutStep, setCheckoutStep] = useState(1);
+                const [selectedProduct, setSelectedProduct] = useState(null);
+                const [selectedVariant, setSelectedVariant] = useState(null);
+                const [selectedSize, setSelectedSize] = useState(null);
+                const [detailQty, setDetailQty] = useState(1);
+                const [formData, setFormData] = useState({ 
+                    name: "", 
+                    email: "", 
+                    street: "",
+                    barangay: "",
+                    city: "",
+                    zip: "",
+                    paymentMethod: "GCash", 
+                    mobileNumber: "", 
+                    shippingMethodId: "std" 
+                });
+                const [errorMsg, setErrorMsg] = useState(null);
+                const [successMsg, setSuccessMsg] = useState(null);
+                const [suggestionChoices, setSuggestionChoices] = useState({});
+                const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+                const [openDropdown, setOpenDropdown] = React.useState(null);
+                const [isLoading, setIsLoading] = useState(false);
+
+                const [stockRegistry, setStockRegistry] = useState({});
+
+                const showUrgency = useMemo(() => {
+                    const lowStockSizes = [39, 41, 44];
+                    return selectedProduct?.category === Category.SHOES && lowStockSizes.includes(Number(selectedSize));
+                }, [selectedSize, selectedProduct]);
+
+                const urgencyCount = useMemo(() => {
+                    if (!selectedProduct || !selectedSize || !showUrgency) return null;
+                    const key = `${selectedProduct.id}-${selectedSize}`;
+                    if (stockRegistry[key]) return stockRegistry[key];
+                    const newCount = Math.floor(Math.random() * 3) + 2;
+                    setStockRegistry(prev => ({ ...prev, [key]: newCount }));
+                    return newCount;
+                }, [selectedSize, selectedProduct, showUrgency, stockRegistry]);
+
+                useEffect(() => { localStorage.setItem("solely-cart", JSON.stringify(cart)); }, [cart]);
+                useEffect(() => { if (successMsg) { const timer = setTimeout(() => setSuccessMsg(null), 3000); return () => clearTimeout(timer); } }, [successMsg]);
+
+                const filtered = useMemo(() => {
+                    if (search.trim() !== "") return PRODUCTS.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase()) || p.sub.toLowerCase().includes(search.toLowerCase()));
+                    if (isHome) return PRODUCTS.filter((p) => p.featured).slice(0, 6);
+                    return PRODUCTS.filter(p => (category === Category.ALL || p.category === category) && (activeSub === "" || p.sub === activeSub));
+                }, [isHome, category, activeSub, search]);
+
+                const suggestions = useMemo(() => PRODUCTS.filter((p) => !cart.map((i) => i.id).includes(p.id)).sort(() => 0.5 - Math.random()).slice(0, 2), [cart]);
+
+                const addToBag = (prod = selectedProduct, variant = selectedVariant, qty = detailQty, size = selectedSize) => {
+                    if (!size) { setErrorMsg("Please select a size first"); return; }
+                    if (!variant) { setErrorMsg("Please select a color first"); return; }
+                    setCart((prev) => {
+                        const exists = prev.find(i => i.id === prod.id && i.color === variant.color && i.size === size);
+                        if (exists) return prev.map(i => i.id === prod.id && i.color === variant.color && i.size === size ? { ...i, quantity: i.quantity + qty } : i);
+                        return [...prev, { ...prod, id: prod.id, quantity: qty, color: variant.color, colorName: variant.colorName, image: variant.img, size: size }];
+                    });
+                    setSuccessMsg("Added to bag");
+                    setSelectedProduct(null);
+                    setSelectedSize(null);
+                    setIsCartOpen(true);
+                };
+
+                const validateMobileNumber = () => {
+                    if (formData.paymentMethod === "GCash" || formData.paymentMethod === "Maya") {
+                        if (!formData.mobileNumber) {
+                            setErrorMsg("Please enter your mobile number");
+                            return false;
+                        }
+                        const mobileRegex = /^09\d{9}$/;
+                        if (!mobileRegex.test(formData.mobileNumber)) {
+                            setErrorMsg("Invalid number. Must be 11 digits starting with 09.");
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+
+                const handleNextToReview = () => {
+                    if (validateMobileNumber()) {
+                        setCheckoutStep(3);
+                    }
+                };
+
+                const handleConfirmPayment = () => {
+                    if (!validateMobileNumber()) return;
+                    setIsLoading(true);
+                    setTimeout(() => {
+                        setIsLoading(false);
+                        setCheckoutStep(4);
+                    }, 2000);
+                };
+
+                const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+                const currentShipping = SHIPPING_METHODS.find(m => m.id === formData.shippingMethodId);
+                const total = subtotal + (currentShipping ? currentShipping.price : 0);
+
+                const fullAddress = `${formData.street}, Brgy. ${formData.barangay}, ${formData.city} ${formData.zip}`;
+
+                return (
+                    <div className="min-h-screen flex flex-col font-inter bg-[#fafaf9]">
+                        {/* NAV BAR */}
+                        <nav className="fixed top-0 w-full z-[100] bg-white/90 backdrop-blur-md border-b border-stone-200 px-4 md:px-6 py-4 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <button className="md:hidden text-xl" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>☰</button>
+                                <h1 className="text-xl md:text-2xl font-black tracking-tighter cursor-pointer" onClick={() => { setIsHome(true); setSearch(""); setIsMobileMenuOpen(false); }}>SOLELY.</h1>
+                            </div>
+                            
+                         <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest">
+  <button
+    onClick={() => {
+      setIsHome(true);
+      setSearch("");
+      setOpenDropdown(null);
+    }}
+    className={isHome && !search ? "text-black border-b-2 border-black" : "text-stone-400"}
+  >
+    Home
+  </button>
+
+  {Object.keys(SUB_CATEGORIES).map((cat) => (
+    <div key={cat} className="relative">
+      <button
+        onClick={() => {
+          if (SUB_CATEGORIES[cat].length > 0) {
+            setOpenDropdown(openDropdown === cat ? null : cat);
+          } else {
+            setIsHome(false);
+            setCategory(cat);
+            setActiveSub("");
+            setSearch("");
+            setOpenDropdown(null);
+          }
+        }}
+        className={!isHome && category === cat ? "text-black" : "text-stone-400"}
+      >
+        {cat} {SUB_CATEGORIES[cat].length > 0 && "▼"}
+      </button>
+
+      {openDropdown === cat && (
+        <div className="absolute top-full left-0 w-48 bg-white shadow-2xl p-2 rounded-xl border border-stone-100">
+          {SUB_CATEGORIES[cat].map((sub) => (
+            <button
+              key={sub}
+              onClick={() => {
+                setIsHome(false);
+                setCategory(cat);
+                setActiveSub(sub);
+                setSearch("");
+                setOpenDropdown(null);
+              }}
+              className="w-full text-left p-3 text-[10px] hover:bg-stone-50 rounded-lg font-bold uppercase tracking-widest"
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+                            <div className="flex items-center gap-2 md:gap-4">
+                                <input placeholder="Search..." className="bg-stone-100 rounded-full px-4 py-2 text-xs md:text-sm w-24 md:w-32 focus:w-40 md:focus:w-48 transition-all border font-medium outline-none" value={search} onChange={(e) => { setSearch(e.target.value); setIsHome(false); }} />
+                                <button onClick={() => setIsCartOpen(true)} className="text-lg md:text-xl relative">
+                                    🛒 {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-bounce">{cart.reduce((a, b) => a + b.quantity, 0)}</span>}
+                                </button>
+                            </div>
+                        </nav>
+
+                        {/* MOBILE MENU OVERLAY */}
+                        {isMobileMenuOpen && (
+                            <div className="fixed inset-0 z-[110] bg-white p-8 md:hidden animate-slide-in overflow-y-auto">
+                                <button className="absolute top-6 right-6 text-2xl" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+                                <div className="flex flex-col items-center gap-6 mt-12 text-xl font-black uppercase tracking-tighter text-center">
+                                    <button onClick={() => { setIsHome(true); setSearch(""); setIsMobileMenuOpen(false); }}>Home</button>
+                                    {Object.keys(SUB_CATEGORIES).map(cat => (
+                                        <div key={cat} className="flex flex-col gap-2 w-full">
+                                            <button onClick={() => { setIsHome(false); setCategory(cat); setActiveSub(""); setSearch(""); setIsMobileMenuOpen(false); }}>{cat}</button>
+                                            <div className="flex flex-col items-center gap-2">
+                                                {SUB_CATEGORIES[cat].map(sub => (
+                                                    <button key={sub} onClick={() => { setIsHome(false); setCategory(cat); setActiveSub(sub); setSearch(""); setIsMobileMenuOpen(false); }} className="text-sm text-stone-400 font-bold">{sub}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* HERO SECTION WITH VIDEO FALLBACK */}
+                        {isHome && !search && (
+                            <section className="h-[60vh] md:h-[75vh] flex items-center justify-center text-center text-white hero-bg px-6 mt-16 animate-fadeIn relative">
+                                <video 
+                                    autoPlay 
+                                    muted 
+                                    loop 
+                                    playsInline 
+                                    poster="https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=2070&auto=format&fit=crop"
+                                    className="absolute inset-0 w-full h-full object-cover z-0"
+                                    onLoadedData={(e) => e.target.style.opacity = 1}
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.style.backgroundImage = "url('https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=2070&auto=format&fit=crop')";
+                                        e.target.parentElement.style.backgroundSize = "cover";
+                                        e.target.parentElement.style.backgroundPosition = "center";
+                                    }}
+                                >
+                                    <source src="video.mp4" type="video/mp4" />
+                                </video>
+                                <div className="absolute inset-0 bg-black/50 z-10"></div>
+                                <div className="relative z-20 animate-hero-float">
+                                    <h2 className="text-7xl md:text-9xl font-black uppercase leading-none">Solely.</h2>
+                                    <p className="text-xs md:text-lg uppercase tracking-[0.4em] font-light italic mt-2">Defined by Essentials</p>
+                                </div>
+                            </section>
+                        )}
+
+                        {/* PRODUCT COLLECTION */}
+                        <main id="collection" className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-12 md:py-24 pt-24 md:pt-32">
+                            <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter mb-8 md:mb-12 border-b pb-4">
+                                {search ? "Search results" : isHome ? "Featured" : `${category} / ${activeSub || "All"}`}
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-12">
+                                {filtered.map((p) => (
+                                    <div key={p.id} className="group cursor-pointer" onClick={() => { setSelectedProduct(p); setSelectedVariant(p.variants[0]); setDetailQty(1); setSelectedSize(null); }}>
+                                        <div className="aspect-[4/5] bg-stone-100 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative mb-4 shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:scale-[1.02]">
+                                            <img src={p.variants[0].img} className="w-full h-full object-cover transition-transform duration-700" />
+                                            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <div className="bg-white text-black px-8 py-3 rounded-full font-black uppercase text-[10px] tracking-widest shadow-2xl translate-y-4 group-hover:translate-y-0 transition-transform duration-300">Quick View</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between font-bold text-base md:text-lg px-2">
+                                            <h3>{p.name}</h3>
+                                            <span>₱{p.price.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </main>
+
+                        {/* PRODUCT DETAIL MODAL */}
+                        {selectedProduct && selectedVariant && (
+                            <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-4">
+                                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
+                                <div className="bg-white w-full max-w-5xl md:rounded-[3rem] relative z-10 overflow-hidden flex flex-col md:flex-row shadow-2xl h-full md:h-auto animate-slide-in overflow-y-auto no-scrollbar">
+                                    <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 md:top-8 md:right-8 z-20 text-stone-400 text-2xl">✕</button>
+                                    <div className="w-full md:w-1/2 bg-stone-50">
+                                        <img key={selectedVariant.img} src={selectedVariant.img} className="w-full h-full object-cover aspect-[4/5] md:aspect-auto" />
+                                    </div>
+                                    <div className="w-full md:w-1/2 p-6 md:p-16 flex flex-col justify-center bg-white">
+                                        <p className="text-[10px] uppercase tracking-[0.3em] text-stone-400 mb-2">{selectedProduct.category}</p>
+                                        <h2 className="text-3xl md:text-5xl font-black uppercase mb-4 leading-tight">{selectedProduct.name}</h2>
+                                        <p className="text-xl md:text-2xl font-black mb-6 md:mb-8">₱{selectedProduct.price.toLocaleString()}</p>
+                                        <div className="mb-6">
+                                            <p className="text-[10px] uppercase font-black tracking-widest mb-4">Color: {selectedVariant.colorName}</p>
+                                            <div className="flex gap-4">
+                                                {selectedProduct.variants.map((v) => (
+                                                    <div key={v.color} onClick={() => setSelectedVariant(v)} className={`color-option ${selectedVariant.color === v.color ? "active" : ""}`} style={{ backgroundColor: v.color, border: v.color === "#FFFFFF" ? "1px solid #e5e7eb" : "none" }} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="mb-8">
+                                            <p className="text-[10px] uppercase font-black tracking-widest mb-4">Select Size (EU)</p>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {SIZES.map((size) => (
+                                                    <div key={size} onClick={() => setSelectedSize(size)} className={`size-option ${selectedSize === size ? "active" : ""}`}>{size}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="h-[56px] mb-6">
+                                          {showUrgency && urgencyCount && (
+                                              <div className="animate-pop-in">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                      <p className="text-[10px] font-black uppercase tracking-widest text-red-600 animate-pulse flex items-center gap-2">
+                                                          🔥 Low Stock: {urgencyCount} items left
+                                                      </p>
+                                                      <span className="text-[9px] font-bold text-stone-400">Demand: Very High</span>
+                                                  </div>
+                                                  <div className="w-full h-1 bg-stone-100 rounded-full overflow-hidden">
+                                                      <div className="h-full bg-red-600 transition-all duration-1000" style={{ width: `${(urgencyCount / 10) * 100}%` }}></div>
+                                                  </div>
+                                              </div>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <div className="flex items-center justify-center border-2 border-stone-100 rounded-2xl px-6 py-3 sm:py-0">
+                                                <button onClick={() => setDetailQty(Math.max(1, detailQty - 1))} className="w-8 font-bold">-</button>
+                                                <span className="w-10 text-center font-black">{detailQty}</span>
+                                                <button onClick={() => setDetailQty(detailQty + 1)} className="w-8 font-bold">+</button>
+                                            </div>
+                                            <button onClick={() => addToBag()} className="flex-1 bg-black text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-stone-800">Add to Bag</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CART SIDEBAR */}
+                        {isCartOpen && (
+                            <div className="fixed inset-0 z-[200] flex justify-end">
+                                <div className="absolute inset-0 bg-black/40" onClick={() => setIsCartOpen(false)} />
+                                <div className="w-full max-md:max-w-full max-w-md bg-white h-full relative z-10 p-6 md:p-10 shadow-2xl flex flex-col animate-slide-in">
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter mb-6 md:mb-10 border-b pb-4 flex justify-between">Bag <button onClick={()=>setIsCartOpen(false)}>✕</button></h2>
+                                    <div className="flex-1 overflow-y-auto space-y-6 md:space-y-8 no-scrollbar">
+                                        {cart.length === 0 ? <p className="text-stone-400 font-bold uppercase text-xs text-center mt-20">Bag is empty</p> : cart.map((item, idx) => (
+                                            <div key={idx} className="flex gap-4 md:gap-6 items-center border-b pb-6 md:pb-8">
+                                                <img src={item.image} className="w-20 h-24 md:w-24 md:h-28 object-cover rounded-2xl bg-stone-50" />
+                                                <div className="flex-1 font-bold">
+                                                    <div className="flex justify-between text-sm md:text-base"><span>{item.name}</span><span>₱{(item.price * item.quantity).toLocaleString()}</span></div>
+                                                    <p className="text-[9px] text-stone-400 uppercase tracking-widest">{item.colorName} / Size: {item.size}</p>
+                                                    <div className="flex items-center gap-4 mt-3">
+                                                        <button onClick={() => { const n = [...cart]; n[idx].quantity--; if (n[idx].quantity <= 0) n.splice(idx, 1); setCart(n); }} className="text-stone-400">-</button>
+                                                        <span className="text-xs md:text-sm">{item.quantity}</span>
+                                                        <button onClick={() => { const n = [...cart]; n[idx].quantity++; setCart(n); }} className="text-stone-400">+</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="pt-6 md:pt-10 border-t-2 mt-6">
+                                        <div className="flex justify-between font-black text-2xl md:text-3xl mb-6 md:mb-10 uppercase tracking-tighter"><span>Total</span><span>₱{subtotal.toLocaleString()}</span></div>
+                                        <button disabled={cart.length === 0} onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); setCheckoutStep(1); }} className="w-full bg-black text-white py-5 md:py-6 rounded-2xl font-black uppercase tracking-widest">Checkout</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CHECKOUT MODAL */}
+                        {isCheckoutOpen && (
+                            <div className="fixed inset-0 z-[250] flex items-center justify-center p-0 md:p-4">
+                                <div className="absolute inset-0 bg-black/90" onClick={() => !isLoading && setIsCheckoutOpen(false)} />
+                                <div className="bg-white w-full max-w-2xl md:rounded-[3rem] p-6 md:p-10 relative z-10 shadow-2xl h-full md:max-h-[90vh] overflow-y-auto no-scrollbar">
+                                    {isLoading ? (
+                                        <div className="flex flex-col items-center justify-center h-64 space-y-6">
+                                            <div className="w-12 h-12 border-4 border-stone-200 border-t-black rounded-full loader-spin"></div>
+                                            <p className="font-black uppercase tracking-widest text-sm animate-pulse">Processing Order...</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {checkoutStep === 1 && (
+                                                <form onSubmit={(e) => { e.preventDefault(); setCheckoutStep(2); }} className="space-y-6 animate-slide-in">
+                                                    <h2 className="text-3xl md:text-4xl font-black uppercase text-center mb-8">Shipping</h2>
+                                                    <div className="space-y-4">
+                                                        <input placeholder="Name" className="w-full p-4 md:p-6 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                                                        <input placeholder="Email" type="email" className="w-full p-4 md:p-6 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+                                                        
+                                                        <div className="space-y-3 pt-2">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 px-2">Delivery Address</p>
+                                                            <input placeholder="Street Name, Building, House No." className="w-full p-4 md:p-5 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.street} onChange={(e) => setFormData({ ...formData, street: e.target.value })} required />
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <input placeholder="Barangay" className="w-full p-4 md:p-5 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.barangay} onChange={(e) => setFormData({ ...formData, barangay: e.target.value })} required />
+                                                                <input placeholder="City" className="w-full p-4 md:p-5 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
+                                                            </div>
+                                                            <input placeholder="Postal Code / Zip" className="w-full p-4 md:p-5 bg-stone-100 rounded-2xl outline-none font-bold" value={formData.zip} onChange={(e) => setFormData({ ...formData, zip: e.target.value })} required />
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-8">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest mb-4">Shipping Method</p>
+                                                        <div className="grid grid-cols-1 gap-3">
+                                                            {SHIPPING_METHODS.map((method) => (
+                                                                <div 
+                                                                    key={method.id} 
+                                                                    onClick={() => setFormData({...formData, shippingMethodId: method.id})}
+                                                                    className={`shipping-option p-5 rounded-2xl flex justify-between items-center ${formData.shippingMethodId === method.id ? "active" : ""}`}
+                                                                >
+                                                                    <div>
+                                                                        <p className="font-black text-sm uppercase">{method.name}</p>
+                                                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{method.desc}</p>
+                                                                    </div>
+                                                                    <p className="font-black text-sm">₱{method.price}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <button type="submit" className="w-full bg-black text-white py-6 rounded-2xl font-black uppercase mt-4">Next: Payment</button>
+                                                </form>
+                                            )}
+
+                                            {checkoutStep === 2 && (
+                                                <div className="space-y-8 animate-slide-in">
+                                                    <h2 className="text-3xl md:text-4xl font-black uppercase text-center mb-8">Payment</h2>
+                                                    <div className="space-y-4">
+                                                        {["GCash", "Maya", "Cash on Delivery"].map((method) => (
+                                                            <div key={method} className="flex flex-col gap-2">
+                                                                <div 
+                                                                    onClick={() => setFormData({ ...formData, paymentMethod: method })}
+                                                                    className={`payment-option p-6 rounded-2xl flex justify-between items-center font-bold ${formData.paymentMethod === method ? "active" : ""}`}
+                                                                >
+                                                                    <span className="uppercase tracking-widest">{method}</span>
+                                                                    {formData.paymentMethod === method && <span>●</span>}
+                                                                </div>
+                                                                {formData.paymentMethod === method && (method === "GCash" || method === "Maya") && (
+                                                                    <input 
+                                                                        type="tel" 
+                                                                        placeholder="Mobile Number (09XXXXXXXXX)" 
+                                                                        maxLength={11}
+                                                                        className="w-full p-4 bg-stone-50 border border-stone-200 rounded-xl outline-none font-bold animate-pop-in"
+                                                                        value={formData.mobileNumber}
+                                                                        onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value.replace(/\D/g, '') })}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <button onClick={() => setCheckoutStep(1)} className="flex-1 bg-stone-100 py-6 rounded-2xl font-black uppercase">Back</button>
+                                                        <button onClick={handleNextToReview} className="flex-[2] bg-black text-white py-6 rounded-2xl font-black uppercase shadow-xl">Review Order</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {checkoutStep === 3 && (
+                                                <div className="space-y-8 animate-slide-in">
+                                                    <h2 className="text-2xl md:text-3xl font-black uppercase text-center mb-6">Review</h2>
+                                                    <div className="bg-stone-50 p-6 rounded-2xl text-[10px] font-bold uppercase space-y-1">
+                                                        <p><span className="text-stone-400">Ship to:</span> {formData.name}</p>
+                                                        <p><span className="text-stone-400">Address:</span> {fullAddress}</p>
+                                                        <p><span className="text-stone-400">Shipping:</span> {currentShipping.name} (₱{currentShipping.price})</p>
+                                                        <p><span className="text-stone-400">Payment:</span> {formData.paymentMethod} {formData.mobileNumber ? `(${formData.mobileNumber})` : ""}</p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {cart.map((item, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center text-xs md:text-sm font-bold bg-stone-50 p-4 rounded-2xl border">
+                                                                <span>{item.quantity}x {item.name} ({item.colorName}, {item.size})</span>
+                                                                <span>₱{(item.price * item.quantity).toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* RESTORED SUGGESTION FEATURE */}
+                                                    <div className="pt-6 border-t">
+                                                        <p className="text-[10px] font-black uppercase mb-4 text-center text-stone-400">Add something else?</p>
+                                                        <div className="space-y-4">
+                                                            {suggestions.map((s) => {
+                                                                const choice = suggestionChoices[s.id] || { colorIdx: 0, size: null };
+                                                                return (
+                                                                    <div key={s.id} className="p-4 border rounded-3xl bg-stone-50">
+                                                                        <div className="flex gap-4 items-center mb-4">
+                                                                            <img src={s.variants[choice.colorIdx].img} className="w-16 h-16 object-cover rounded-xl" />
+                                                                            <div className="flex-1">
+                                                                                <p className="text-xs font-black uppercase">{s.name}</p>
+                                                                                <p className="text-[10px] font-bold">₱{s.price.toLocaleString()}</p>
+                                                                            </div>
+                                                                            <button onClick={() => addToBag(s, s.variants[choice.colorIdx], 1, choice.size)} className="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase">ADD</button>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <select className="text-[9px] font-bold p-2 rounded-lg bg-white border outline-none" onChange={(e) => setSuggestionChoices({ ...suggestionChoices, [s.id]: { ...choice, colorIdx: e.target.selectedIndex } })}>
+                                                                                {s.variants.map((v, i) => (<option key={i}>{v.colorName}</option>))}
+                                                                            </select>
+                                                                            <select className="text-[9px] font-bold p-2 rounded-lg bg-white border outline-none" value={choice.size || ""} onChange={(e) => setSuggestionChoices({ ...suggestionChoices, [s.id]: { ...choice, size: e.target.value } })}>
+                                                                                <option value="">Select Size</option>
+                                                                                {SIZES.map((sz) => (<option key={sz} value={sz}>{sz}</option>))}
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xl md:text-2xl font-black uppercase border-t-2">
+                                                        <div className="text-right w-full md:w-auto">
+                                                            <p className="text-[10px] text-stone-400">Subtotal: ₱{subtotal.toLocaleString()}</p>
+                                                            <p className="text-[10px] text-stone-400">Shipping Fee: ₱{currentShipping.price}</p>
+                                                            <p>Total: ₱{total.toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="flex gap-2 w-full md:w-auto">
+                                                            <button onClick={() => setCheckoutStep(2)} className="bg-stone-100 px-6 py-5 rounded-2xl text-base">Back</button>
+                                                            <button onClick={handleConfirmPayment} className="flex-1 md:flex-none bg-black text-white px-8 py-5 rounded-2xl text-base shadow-xl">Pay & Confirm</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {checkoutStep === 4 && (
+                                                <div className="text-center py-8">
+                                                    <div className="flex justify-center mb-6">
+                                                        <div className="relative w-24 h-24 flex items-center justify-center">
+                                                            <svg className="w-full h-full text-green-500" viewBox="0 0 52 52">
+                                                                <circle className="opacity-10" cx="26" cy="26" r="25" fill="currentColor"/>
+                                                                <path className="animate-checkmark" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                                                            </svg>
+                                                            <div className="absolute -top-2 -right-2 text-4xl animate-bounce-subtle">✨</div>
+                                                        </div>
+                                                    </div>
+                                                    <h2 className="text-3xl md:text-4xl font-black uppercase mb-4 text-green-600 animate-pop-in">Confirmed</h2>
+                                                    <p className="text-stone-400 font-bold text-[10px] uppercase mb-8 animate-pop-in" style={{animationDelay: '0.1s'}}>Thank you, {formData.name}</p>
+                                                    
+                                                    {/* RESTORED DETAILED RECEIPT SECTION */}
+                                                    <div className="bg-stone-50 p-6 rounded-3xl text-left border mb-10 space-y-4 animate-pop-in" style={{animationDelay: '0.2s'}}>
+                                                        <div className="border-b pb-4 flex justify-between items-start">
+                                                            <div>
+                                                                <p className="text-[10px] font-black uppercase text-stone-400">Order Information</p>
+                                                                <p className="text-xs font-bold uppercase mt-1">{formData.name}</p>
+                                                                <p className="text-[10px] font-medium text-stone-400">{formData.email}</p>
+                                                                <p className="text-[10px] font-medium text-stone-400 leading-tight mt-1">{fullAddress}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-[10px] font-black uppercase text-stone-400">Payment</p>
+                                                                <p className="text-[10px] font-bold uppercase mt-1">{formData.paymentMethod}</p>
+                                                                {formData.mobileNumber && <p className="text-[9px] font-medium text-stone-400">{formData.mobileNumber}</p>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2 py-2">
+                                                            {cart.map((item, idx) => (
+                                                                <div key={idx} className="flex justify-between text-[10px] font-bold uppercase">
+                                                                    <span>{item.quantity}x {item.name} ({item.size})</span>
+                                                                    <span>₱{(item.price * item.quantity).toLocaleString()}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="border-t pt-4 space-y-1">
+                                                            <div className="flex justify-between text-[10px] font-bold uppercase text-stone-400">
+                                                                <span>Subtotal</span>
+                                                                <span>₱{subtotal.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-[10px] font-bold uppercase text-stone-400">
+                                                                <span>Shipping ({currentShipping.name})</span>
+                                                                <span>₱{currentShipping.price}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-lg font-black uppercase pt-2 border-t mt-2">
+                                                                <span>Total Paid</span>
+                                                                <span>₱{total.toLocaleString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button onClick={() => { setIsCheckoutOpen(false); setCheckoutStep(1); setCart([]); setIsHome(true); }} className="w-full bg-black text-white py-6 rounded-2xl font-black uppercase shadow-lg animate-pop-in hover:scale-[1.02] transition-transform" style={{animationDelay: '0.3s'}}>Close</button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <footer className="py-12 md:py-24 border-t text-center uppercase">
+                            <h3 className="text-2xl md:text-3xl font-black tracking-tighter mb-4">SOLELY.</h3>
+                            <p className="text-[10px] text-stone-300 font-black"><b className="text-[10px] text-stone-500 font-black">Solemates</b> - Est. 2026</p>
+                        </footer>
+
+                        {/* NOTIFICATIONS */}
+                        {errorMsg && (
+                            <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 cursor-pointer" onClick={() => setErrorMsg(null)}>
+                                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                                <div className="bg-black text-white px-8 md:px-12 py-8 md:py-10 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl flex flex-col items-center gap-6 animate-pop-in relative z-10 border border-white/10 text-center">
+                                    <div className="text-4xl md:text-5xl">⚠️</div>
+                                    <span className="text-lg md:text-2xl font-black uppercase tracking-widest leading-tight">{errorMsg}</span>
+                                    <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-2">Click anywhere to close</p>
+                                </div>
+                            </div>
+                        )}
+                        {successMsg && (
+                            <div className="fixed top-20 right-4 md:right-6 z-[300] cursor-pointer animate-toast" onClick={() => setSuccessMsg(null)}>
+                                <div className="bg-black text-white px-6 py-2 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10">
+                                    <div className="text-xl">✅</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">{successMsg}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            root.render(<App />);
+        </script>
+    </body>
+</html>
